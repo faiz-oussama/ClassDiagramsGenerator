@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 
 import java.util.List;
 
@@ -20,6 +21,7 @@ public class ClassEntity {
     private Long id;
     private String name;
 
+    @JsonBackReference("diagram-classes")
     @ManyToOne
     private ClassDiagram classDiagram;
 

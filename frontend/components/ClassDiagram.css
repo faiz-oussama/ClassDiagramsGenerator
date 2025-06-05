@@ -1,0 +1,14 @@
+/* Required JointJS styles */
+.joint-paper {
+  background: transparent;
+  width: 100%;
+  height: 100%;
+}
+
+.joint-element {
+  cursor: pointer;
+}
+
+.joint-link {
+  cursor: default;
+}

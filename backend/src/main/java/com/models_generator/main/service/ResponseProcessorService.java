@@ -1,17 +1,25 @@
 
 package com.models_generator.main.service;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.models_generator.main.enums.RelationshipType;
 import com.models_generator.main.enums.Visibility;
-import com.models_generator.main.model.*;
+import com.models_generator.main.model.Attribute;
+import com.models_generator.main.model.ClassDiagram;
+import com.models_generator.main.model.ClassEntity;
+import com.models_generator.main.model.Method;
+import com.models_generator.main.model.Relationship;
 import com.models_generator.main.repository.ClassDiagramRepository;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.util.*;
 
 @Service
 public class ResponseProcessorService {
@@ -21,6 +29,7 @@ public class ResponseProcessorService {
     public ResponseProcessorService(ClassDiagramRepository classDiagramRepository) {
         this.classDiagramRepository = classDiagramRepository;
     }
+
 
     /**
      * Processes the Gemini JSON response and saves the diagram to the database.
@@ -33,14 +42,14 @@ public class ResponseProcessorService {
         // Clean JSON first 
         
         json = cleanJson(json);
+
         JsonNode root = mapper.readTree(json);
 
         ClassDiagram diagram = new ClassDiagram();
+
         diagram.setTitle(diagramTitle);
         diagram.setClasses(new ArrayList<>());
         diagram.setRelationships(new ArrayList<>());
-
-        
         
 
         // Save diagram first to handle foreign key constraints
@@ -56,11 +65,17 @@ public class ResponseProcessorService {
             classEntity.setName(entityName);
             classEntity.setClassDiagram(diagram);
 
-            List<Attribute> attributes = new ArrayList<>();
-            for (JsonNode attrNode : entityNode.get("attributes")) {
+            List<Attribute> attributes = new ArrayList<>();            for (JsonNode attrNode : entityNode.get("attributes")) {
                 Attribute attribute = new Attribute();
-                attribute.setName(attrNode.asText());
-                attribute.setType("String"); // Default type
+                String fullAttr = attrNode.asText();
+                // Split by colon to separate name and type
+                String[] parts = fullAttr.split(":");
+                String attrName = parts[0].trim();
+                // Default to String if type is not specified
+                String attrType = parts.length > 1 ? parts[1].trim() : "String";
+                
+                attribute.setName(attrName);
+                attribute.setType(attrType);
                 attribute.setVisibility(Visibility.PRIVATE);
                 attribute.setClassEntity(classEntity);
                 attributes.add(attribute);
@@ -72,6 +87,7 @@ public class ResponseProcessorService {
             diagram.getClasses().add(classEntity);
             entityMap.put(entityName, classEntity);
         }
+
 
         // Parse relationships and infer methods
         for (JsonNode relNode : root.get("relationships")) {
@@ -159,7 +175,8 @@ public class ResponseProcessorService {
         };
     }
 
-    private String cleanJson(String aiResponse) {
+    // Clean JSON response
+    public String cleanJson(String aiResponse) {
         if (aiResponse.startsWith("```json") || aiResponse.startsWith("```")) {
             aiResponse = aiResponse.replaceFirst("(?s)^```(?:json)?", "");
             aiResponse = aiResponse.replaceFirst("```\\s*$", "");

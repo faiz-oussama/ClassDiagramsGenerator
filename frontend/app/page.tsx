@@ -8,8 +8,14 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Loader2, CheckCircle, Sparkles, Info, Zap, GitBranch, ArrowRight } from "lucide-react"
+import { Loader2, CheckCircle, Sparkles, Info, Zap, GitBranch, ArrowRight, Code, AlertCircle } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import dynamic from 'next/dynamic'
+
+const ClassDiagram = dynamic(
+  () => import('@/components/ClassDiagram'),
+  { ssr: false }
+)
 
 interface GeneratedDiagram {
   title: string
@@ -22,25 +28,49 @@ export default function AIUMLGenerator() {
   const [title, setTitle] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [generatedDiagram, setGeneratedDiagram] = useState<GeneratedDiagram | null>(null)
+  const [diagramData, setDiagramData] = useState(null)
   const [showSuccess, setShowSuccess] = useState(false)
+  const [error, setError] = useState("")
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
     if (!prompt.trim() || !title.trim()) {
+      setError("Please fill in both title and system description")
       return
     }
 
     setIsLoading(true)
     setGeneratedDiagram(null)
+    setDiagramData(null)
     setShowSuccess(false)
+    setError("")
 
-    // Simulate AI processing
     try {
-      await new Promise((resolve) => setTimeout(resolve, 3000))
-
+      const response = await fetch('http://localhost:8081/api/ask', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          prompt: prompt,
+          title: title
+        })
+      });
+  
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Failed to generate diagram');
+      }
+  
+      const data = await response.json()
+      
+      // Set the diagram data for rendering
+      setDiagramData(data.diagramData)
+      
+      // Extract class names for the success display
       const mockClassNames = extractClassNames(prompt)
-
+      
       setGeneratedDiagram({
         title: title.trim(),
         classNames: mockClassNames,
@@ -48,8 +78,9 @@ export default function AIUMLGenerator() {
       })
 
       setShowSuccess(true)
-    } catch (error) {
-      console.error("Error generating diagram:", error)
+    } catch (err) {
+      console.error("Error generating diagram:", err)
+      setError("Failed to generate diagram. Please try again.")
     } finally {
       setIsLoading(false)
     }
@@ -91,7 +122,9 @@ export default function AIUMLGenerator() {
     setPrompt("")
     setTitle("")
     setGeneratedDiagram(null)
+    setDiagramData(null)
     setShowSuccess(false)
+    setError("")
   }
 
   return (
@@ -145,6 +178,22 @@ export default function AIUMLGenerator() {
             </CardHeader>
             <CardContent className="space-y-8">
               <form onSubmit={handleSubmit} className="space-y-6">
+                {/* Diagram Title */}
+                <div className="space-y-2">
+                  <Label htmlFor="title" className="text-sm font-medium text-gray-300">
+                    Diagram Title
+                  </Label>
+                  <Input
+                    id="title"
+                    type="text"
+                    placeholder="Enter a descriptive title for your diagram"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    className="bg-white/5 border-white/20 text-white placeholder:text-gray-500 focus:border-indigo-400/50 focus:ring-indigo-400/20 backdrop-blur-sm"
+                    disabled={isLoading}
+                  />
+                </div>
+
                 {/* System Description */}
                 <div className="space-y-2">
                   <div className="flex items-center space-x-2">
@@ -180,21 +229,13 @@ export default function AIUMLGenerator() {
                   </div>
                 </div>
 
-                {/* Diagram Title */}
-                <div className="space-y-2">
-                  <Label htmlFor="title" className="text-sm font-medium text-gray-300">
-                    Diagram Title
-                  </Label>
-                  <Input
-                    id="title"
-                    type="text"
-                    placeholder="Enter a descriptive title for your diagram"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    className="bg-white/5 border-white/20 text-white placeholder:text-gray-500 focus:border-indigo-400/50 focus:ring-indigo-400/20 backdrop-blur-sm"
-                    disabled={isLoading}
-                  />
-                </div>
+                {/* Error Message */}
+                {error && (
+                  <div className="flex items-center space-x-2 p-4 bg-red-500/10 border border-red-400/20 rounded-lg backdrop-blur-sm">
+                    <AlertCircle className="h-5 w-5 text-red-400" />
+                    <span className="text-red-300 text-sm">{error}</span>
+                  </div>
+                )}
 
                 {/* Submit Button */}
                 <Button
@@ -229,7 +270,7 @@ export default function AIUMLGenerator() {
                   </div>
                   <div className="flex-1 space-y-4">
                     <div>
-                      <h3 className="text-xl font-semibold text-white mb-2">Diagram generated and saved!</h3>
+                      <h3 className="text-xl font-semibold text-white mb-2">Diagram generated successfully!</h3>
                       <p className="text-emerald-200">
                         Your UML class diagram "{generatedDiagram.title}" has been successfully created.
                       </p>
@@ -266,16 +307,28 @@ export default function AIUMLGenerator() {
                         variant="outline"
                         className="border-emerald-400/30 text-emerald-300 hover:bg-emerald-500/10 backdrop-blur-sm"
                       >
-                        View Diagram
-                      </Button>
-                      <Button
-                        variant="outline"
-                        className="border-emerald-400/30 text-emerald-300 hover:bg-emerald-500/10 backdrop-blur-sm"
-                      >
                         Export PNG
                       </Button>
                     </div>
                   </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Diagram Display Section */}
+          {diagramData && (
+            <Card className="bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl animate-in slide-in-from-bottom-4 duration-500">
+              <CardHeader className="pb-4">
+                <h3 className="text-2xl font-bold text-white flex items-center">
+                  <Code className="mr-2 h-6 w-6 text-indigo-400" />
+                  Generated Class Diagram
+                </h3>
+                <p className="text-gray-400">Interactive UML class diagram visualization</p>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="h-[600px] w-full overflow-hidden rounded-b-lg">
+                  <ClassDiagram diagramData={diagramData} />
                 </div>
               </CardContent>
             </Card>

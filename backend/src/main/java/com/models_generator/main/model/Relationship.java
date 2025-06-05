@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 
 
 @Entity
@@ -24,6 +25,7 @@ public class Relationship {
     @Enumerated(EnumType.STRING)
     private RelationshipType type;
 
+    @JsonBackReference("diagram-relationships")
     @ManyToOne
     @JoinColumn(name = "diagram_id")
     private ClassDiagram classDiagram;
