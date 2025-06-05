@@ -41,7 +41,6 @@ public class AIService {
                 systemInstruction = new HashMap<>();
                 systemInstruction.put("parts", content.get("parts"));
             } else {
-                // Keep user/model messages in contents
                 userContents.add(content);
             }
         }
@@ -55,7 +54,7 @@ public class AIService {
             requestBody.put("systemInstruction", systemInstruction);
         }
 
-        // Add generation config for better responses
+        // generation config for Gemini API
         Map<String, Object> generationConfig = new HashMap<>();
         generationConfig.put("temperature", 0.7);
         generationConfig.put("topK", 40);
@@ -63,24 +62,24 @@ public class AIService {
         generationConfig.put("maxOutputTokens", 8192);
         requestBody.put("generationConfig", generationConfig);
 
-        // Build HTTP request with proper headers
+
+        // preparation des headers de la requete
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        // Don't use Bearer auth for Gemini - the API key goes in the URL
 
         HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
 
+        // Call Gemini API
         try {
-            // Use the API key in the URL parameter, not in headers
             String url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=" + apiKey;
 
             ResponseEntity<Map> response = restTemplate.postForEntity(url, entity, Map.class);
 
-            // Parse response with better error handling
+            // Parse response 
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
                 Map<String, Object> body = response.getBody();
 
-                // Check for error in response
+                // Check for errors
                 if (body.containsKey("error")) {
                     Map<String, Object> error = (Map<String, Object>) body.get("error");
                     System.err.println("Gemini API Error: " + error.get("message"));

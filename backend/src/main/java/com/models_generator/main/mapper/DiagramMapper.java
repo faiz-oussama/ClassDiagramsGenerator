@@ -1,12 +1,14 @@
 // src/main/java/com/models_generator/main/mapper/DiagramMapper.java
 package com.models_generator.main.mapper;
 
-import com.models_generator.main.DTO.DiagramDTO;
-import com.models_generator.main.model.*;
+import java.util.stream.Collectors;
+
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-import java.util.stream.Collectors;
+import com.models_generator.main.DTO.DiagramDTO;
+import com.models_generator.main.model.ClassDiagram;
+import com.models_generator.main.model.ClassEntity;
+import com.models_generator.main.model.Relationship;
 
 @Component
 public class DiagramMapper {
@@ -27,6 +29,8 @@ public class DiagramMapper {
         
         return dto;
     }
+
+    // Cette partie est dédiée à la conversion des entités en DTO au format specifique de la librairie de front
     
     private DiagramDTO.ClassElement mapClass(ClassEntity entity) {
         DiagramDTO.ClassElement element = new DiagramDTO.ClassElement();
@@ -55,7 +59,8 @@ public class DiagramMapper {
                 })
                 .collect(Collectors.toList()));
         
-        // Default position
+        // Default position car la librairie de front attends une position précise
+        // pour chaque entite
         DiagramDTO.Position position = new DiagramDTO.Position();
         position.setX((int)(Math.random() * 500));
         position.setY((int)(Math.random() * 500)); 

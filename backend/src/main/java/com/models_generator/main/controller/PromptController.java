@@ -1,16 +1,20 @@
 package com.models_generator.main.controller;
 
-import com.models_generator.main.service.AIService;
-import com.models_generator.main.service.ResponseProcessorService;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-import com.models_generator.main.DTO.ApiResponse;
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.core.JsonProcessingException;
+import com.models_generator.main.DTO.ApiResponse;
+import com.models_generator.main.service.AIService;
+import com.models_generator.main.service.ResponseProcessorService;
 
 @RestController
 @CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true")
@@ -34,6 +38,8 @@ public class PromptController {
         String aiRawResponse = aiService.getAiResponse(prompt);
         
         String cleanedJson = processorService.cleanJson(aiRawResponse);
+
+        // Parse diagram data and link it to the response
         try {
             JsonNode diagramData = objectMapper.readTree(cleanedJson);
             response.setDiagramData(diagramData);
@@ -41,7 +47,8 @@ public class PromptController {
             e.printStackTrace();
         }
 
-
+        // mora madazt data l frontend ankhli l process and parsing w saving f database asyncrone bach tkon reponse rapid 
+        // w makatsnach 7ta data t sava l database 3ad t rediregik l frontend
         CompletableFuture.runAsync(() -> {
         try {
             processorService.processResponse(cleanedJson, title);

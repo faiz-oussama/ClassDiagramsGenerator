@@ -28,6 +28,10 @@ public class PromptService {
         promptRepository.save(prompt);
     }
 
+    // Prepare final prompt because Gemini API expects a list of messages
+    // in this specific form : 
+    //[ { "role": "system", "parts": [ { "text": "..." } ] }, { "role": "user", "parts": [ { "text": "..." } ] } ]
+
     public List<Map<String, Object>> prepareFinalPrompt(String userPrompt) {
         List<Map<String, Object>> messages = new ArrayList<>();
 
