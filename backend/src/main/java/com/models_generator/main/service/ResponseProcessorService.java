@@ -1,4 +1,3 @@
-
 package com.models_generator.main.service;
 
 import java.util.ArrayList;
@@ -38,19 +37,15 @@ public class ResponseProcessorService {
     public ClassDiagram processResponse(String json, String diagramTitle) throws JsonProcessingException {
         ObjectMapper mapper = new ObjectMapper();
 
-
         // Clean JSON first 
-        
         json = cleanJson(json);
 
         JsonNode root = mapper.readTree(json);
 
         ClassDiagram diagram = new ClassDiagram();
-
         diagram.setTitle(diagramTitle);
         diagram.setClasses(new ArrayList<>());
         diagram.setRelationships(new ArrayList<>());
-        
 
         // Save diagram first to handle foreign key constraints
         diagram = classDiagramRepository.save(diagram);
@@ -65,57 +60,70 @@ public class ResponseProcessorService {
             classEntity.setName(entityName);
             classEntity.setClassDiagram(diagram);
 
-            List<Attribute> attributes = new ArrayList<>();            for (JsonNode attrNode : entityNode.get("attributes")) {
+            // Parse attributes
+            List<Attribute> attributes = new ArrayList<>();
+            for (JsonNode attrNode : entityNode.get("attributes")) {
                 Attribute attribute = new Attribute();
                 String fullAttr = attrNode.asText();
-                // Split by colon to separate name and type
+
                 String[] parts = fullAttr.split(":");
                 String attrName = parts[0].trim();
-                // Default to String if type is not specified
                 String attrType = parts.length > 1 ? parts[1].trim() : "String";
-                
+
                 attribute.setName(attrName);
                 attribute.setType(attrType);
                 attribute.setVisibility(Visibility.PRIVATE);
                 attribute.setClassEntity(classEntity);
                 attributes.add(attribute);
             }
-
             classEntity.setAttributes(attributes);
-            classEntity.setMethods(new ArrayList<>());
+
+            // Parse methods
+            List<Method> methods = new ArrayList<>();
+            if (entityNode.has("methods")) {
+                for (JsonNode methodNode : entityNode.get("methods")) {
+                    Method method = new Method();
+                    method.setName(methodNode.get("name").asText());
+                    method.setReturnType(methodNode.has("returnType") ? methodNode.get("returnType").asText() : "void");
+                    method.setVisibility(Visibility.PUBLIC); // Default or configurable
+
+                    // Parse parameters as list of strings
+                    List<String> parameters = new ArrayList<>();
+                    if (methodNode.has("parameters")) {
+                        for (JsonNode paramNode : methodNode.get("parameters")) {
+                            parameters.add(paramNode.asText());
+                        }
+                    }
+                    method.setParameters(parameters);
+                    method.setClassEntity(classEntity);
+
+                    methods.add(method);
+                }
+            }
+            classEntity.setMethods(methods);
 
             diagram.getClasses().add(classEntity);
             entityMap.put(entityName, classEntity);
         }
 
-
-        // Parse relationships and infer methods
+        // Parse relationships
         for (JsonNode relNode : root.get("relationships")) {
             String subject = relNode.get("subject").asText();
             String object = relNode.get("object").asText();
             String verb = relNode.get("verb").asText();
 
-            // Create relationship
             Relationship relationship = new Relationship();
             relationship.setFromClassName(subject);
             relationship.setToClassName(object);
             relationship.setType(mapVerbToRelationType(verb));
             relationship.setClassDiagram(diagram);
-            diagram.getRelationships().add(relationship);
 
-            // Infer and add method
-            Method method = inferMethodFromVerb(verb, object);
-            if (method != null) {
-                ClassEntity subjectEntity = entityMap.get(subject);
-                if (subjectEntity != null) {
-                    method.setClassEntity(subjectEntity);
-                    subjectEntity.getMethods().add(method);
-                }
-            }
+            diagram.getRelationships().add(relationship);
         }
 
         return classDiagramRepository.save(diagram);
     }
+
 
     /**
      * Maps common relationship verbs to a RelationshipType enum.
@@ -132,48 +140,6 @@ public class ResponseProcessorService {
         };
     }
 
-    /**
-     * Infers a method from a relationship verb and the related object name.
-     */
-    private Method inferMethodFromVerb(String verb, String object) {
-        Method method = new Method();
-        method.setVisibility(Visibility.PUBLIC);
-        method.setParameters(new ArrayList<>());
-
-        String camelObject = Character.toLowerCase(object.charAt(0)) + object.substring(1);
-        String capitalObject = Character.toUpperCase(object.charAt(0)) + object.substring(1);
-
-        return switch (verb.toLowerCase()) {
-            case "creates" -> {
-                method.setName("create" + capitalObject);
-                method.setReturnType(capitalObject);
-                yield method;
-            }
-            case "owns" -> {
-                method.setName("getOwned" + capitalObject + "s");
-                method.setReturnType("List<" + capitalObject + ">");
-                yield method;
-            }
-            case "is_assigned_to", "assigned_to" -> {
-                method.setName("assign" + capitalObject);
-                method.setReturnType("void");
-                method.getParameters().add(camelObject);
-                yield method;
-            }
-            case "has_many" -> {
-                method.setName("get" + capitalObject + "List");
-                method.setReturnType("List<" + capitalObject + ">");
-                yield method;
-            }
-            case "uploads" -> {
-                method.setName("upload" + capitalObject);
-                method.setReturnType("void");
-                method.getParameters().add(camelObject);
-                yield method;
-            }
-            default -> null;
-        };
-    }
 
     // Clean JSON response
     public String cleanJson(String aiResponse) {

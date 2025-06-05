@@ -29,8 +29,7 @@ const ClassDiagram = ({ diagramData }) => {
       return {
         id: entity.name,
         type: 'default',
-        position: { x, y },
-        data: {
+        position: { x, y },        data: {
           label: entity.name,
           attributes: entity.attributes || [],
           methods: entity.methods || []
@@ -80,12 +79,11 @@ const ClassDiagram = ({ diagramData }) => {
           nodes={elements.filter(el => !el.source)}
           edges={elements.filter(el => el.source)}
           nodeTypes={nodeTypes}
-          onNodeClick={(_, node) => setSelectedNode(node.id === selectedNode ? null : node.id)}
-          fitView
-          fitViewOptions={{ padding: 50 }}
-          defaultViewport={{ x: 0, y: 0, zoom: 0.8 }}
-          minZoom={0.2}
-          maxZoom={2}
+          onNodeClick={(_, node) => setSelectedNode(node.id === selectedNode ? null : node.id)}          fitView
+          fitViewOptions={{ padding: 40 }}
+          defaultViewport={{ x: 0, y: 0, zoom: 1.5 }}
+          minZoom={0.4}
+          maxZoom={3}
           className="react-flow-dark-theme"
         >
           <Background

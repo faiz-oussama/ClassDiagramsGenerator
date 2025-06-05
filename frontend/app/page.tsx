@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Loader2, CheckCircle, Sparkles, Info, Zap, GitBranch, ArrowRight, Code, AlertCircle } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { useToast } from "@/hooks/use-toast"
 import dynamic from 'next/dynamic'
 
 const ClassDiagram = dynamic(
@@ -29,8 +30,8 @@ export default function AIUMLGenerator() {
   const [isLoading, setIsLoading] = useState(false)
   const [generatedDiagram, setGeneratedDiagram] = useState<GeneratedDiagram | null>(null)
   const [diagramData, setDiagramData] = useState(null)
-  const [showSuccess, setShowSuccess] = useState(false)
   const [error, setError] = useState("")
+  const { toast } = useToast()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -43,7 +44,6 @@ export default function AIUMLGenerator() {
     setIsLoading(true)
     setGeneratedDiagram(null)
     setDiagramData(null)
-    setShowSuccess(false)
     setError("")
 
     try {
@@ -77,7 +77,12 @@ export default function AIUMLGenerator() {
         timestamp: new Date(),
       })
 
-      setShowSuccess(true)
+      // Show success toast
+      toast({
+        title: "Diagram generated successfully!",
+        description: `Your UML class diagram "${title}" has been created with ${mockClassNames.length} classes.`,
+        variant: "default",
+      })
     } catch (err) {
       console.error("Error generating diagram:", err)
       setError("Failed to generate diagram. Please try again.")
@@ -123,7 +128,6 @@ export default function AIUMLGenerator() {
     setTitle("")
     setGeneratedDiagram(null)
     setDiagramData(null)
-    setShowSuccess(false)
     setError("")
   }
 
@@ -260,78 +264,52 @@ export default function AIUMLGenerator() {
             </CardContent>
           </Card>
 
-          {/* Success Message */}
-          {showSuccess && generatedDiagram && (
-            <Card className="bg-gradient-to-r from-emerald-500/10 to-teal-500/10 backdrop-blur-xl border border-emerald-400/20 shadow-2xl animate-in slide-in-from-bottom-4 duration-500">
-              <CardContent className="pt-6">
-                <div className="flex items-start space-x-4">
-                  <div className="p-2 bg-emerald-500/20 rounded-full">
-                    <CheckCircle className="h-6 w-6 text-emerald-400" />
-                  </div>
-                  <div className="flex-1 space-y-4">
-                    <div>
-                      <h3 className="text-xl font-semibold text-white mb-2">Diagram generated successfully!</h3>
-                      <p className="text-emerald-200">
-                        Your UML class diagram "{generatedDiagram.title}" has been successfully created.
-                      </p>
-                    </div>
-
-                    {/* Generated Classes */}
-                    {generatedDiagram.classNames.length > 0 && (
-                      <div className="space-y-3">
-                        <h4 className="font-medium text-emerald-100">Detected Classes:</h4>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                          {generatedDiagram.classNames.map((className, index) => (
-                            <div
-                              key={index}
-                              className="px-3 py-2 bg-white/10 backdrop-blur-sm rounded-lg border border-white/20 text-center animate-in fade-in-50 duration-300"
-                              style={{ animationDelay: `${index * 100}ms` }}
-                            >
-                              <span className="text-sm font-medium text-white">{className}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Action Buttons */}
-                    <div className="flex flex-col sm:flex-row gap-3 pt-2">
-                      <Button
-                        onClick={resetForm}
-                        variant="outline"
-                        className="border-emerald-400/30 text-emerald-300 hover:bg-emerald-500/10 backdrop-blur-sm"
-                      >
-                        Generate Another
-                      </Button>
-                      <Button
-                        variant="outline"
-                        className="border-emerald-400/30 text-emerald-300 hover:bg-emerald-500/10 backdrop-blur-sm"
-                      >
-                        Export PNG
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
           {/* Diagram Display Section */}
           {diagramData && (
-            <Card className="bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl animate-in slide-in-from-bottom-4 duration-500">
-              <CardHeader className="pb-4">
-                <h3 className="text-2xl font-bold text-white flex items-center">
-                  <Code className="mr-2 h-6 w-6 text-indigo-400" />
-                  Generated Class Diagram
-                </h3>
-                <p className="text-gray-400">Interactive UML class diagram visualization</p>
-              </CardHeader>
-              <CardContent className="p-0">
-                <div className="h-[600px] w-full overflow-hidden rounded-b-lg">
-                  <ClassDiagram diagramData={diagramData} />
-                </div>
-              </CardContent>
-            </Card>
+            <>
+              <Card className="bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl animate-in slide-in-from-bottom-4 duration-500">
+                <CardHeader className="pb-4">
+                  <h3 className="text-2xl font-bold text-white flex items-center">
+                    <Code className="mr-2 h-6 w-6 text-indigo-400" />
+                    Generated Class Diagram
+                  </h3>
+                  <p className="text-gray-400">Interactive UML class diagram visualization</p>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <div className="h-[600px] w-full overflow-hidden rounded-b-lg">
+                    <ClassDiagram diagramData={diagramData} />
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Floating Action Bar */}
+              <div className="fixed bottom-8 left-1/2 transform -translate-x-1/2 flex items-center gap-4 bg-white/10 backdrop-blur-xl border border-white/20 rounded-full px-6 py-3 shadow-2xl animate-in slide-in-from-bottom-8 duration-700">
+                <Button
+                  onClick={resetForm}
+                  variant="ghost"
+                  className="text-white hover:bg-white/20 hover:text-white"
+                >
+                  <Sparkles className="mr-2 h-4 w-4" />
+                  Generate Another
+                </Button>
+                <div className="w-px h-6 bg-white/20" />
+                <Button
+                  onClick={() => {
+                    // TODO: Implement PNG export
+                    toast({
+                      title: "Export feature coming soon!",
+                      description: "The ability to export diagrams as PNG will be available in the next update.",
+                      variant: "default",
+                    })
+                  }}
+                  variant="ghost"
+                  className="text-white hover:bg-white/20 hover:text-white"
+                >
+                  <ArrowRight className="mr-2 h-4 w-4" />
+                  Export PNG
+                </Button>
+              </div>
+            </>
           )}
 
           {/* Features Grid */}

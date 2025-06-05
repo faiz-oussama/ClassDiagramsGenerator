@@ -38,10 +38,8 @@ const CustomClassNode = ({ data }) => {
                 <div 
                   key={idx} 
                   className="text-sm text-slate-300 hover:text-cyan-200 transition-colors duration-300 flex items-center space-x-2 p-1 rounded-lg hover:bg-cyan-500/10"
-                >                  <span className="w-1 h-1 rounded-full bg-cyan-400/60"></span>
-                  <span className="font-mono">
-                    {attr.name}
-                    <span className="text-cyan-300 ml-1">: {attr.type}</span>
+                >                  <span className="w-1 h-1 rounded-full bg-cyan-400/60"></span>                  <span className="font-mono">
+                    {attr}
                   </span>
                 </div>
               ))}
@@ -57,14 +55,17 @@ const CustomClassNode = ({ data }) => {
                   <div className="w-2 h-2 rounded-full bg-pink-400 animate-pulse"></div>
                   <h4 className="text-sm font-semibold text-pink-300 uppercase tracking-wider">Methods</h4>
                 </div>
-                <div className="space-y-1 pl-4">
-                  {data.methods.map((method, idx) => (
+                <div className="space-y-1 pl-4">                {data.methods.map((method, idx) => (
                     <div 
                       key={idx} 
                       className="text-sm text-slate-300 hover:text-pink-200 transition-colors duration-300 flex items-center space-x-2 p-1 rounded-lg hover:bg-pink-500/10"
                     >
                       <span className="w-1 h-1 rounded-full bg-pink-400/60"></span>
-                      <span className="font-mono">{method}</span>
+                      <span className="font-mono">
+                        {method.name}(
+                        {method.parameters?.join(", ") || ""}
+                        ): {method.returnType}
+                      </span>
                     </div>
                   ))}
                 </div>
