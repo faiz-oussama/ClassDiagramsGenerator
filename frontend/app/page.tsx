@@ -2,16 +2,16 @@
 
 import type React from "react"
 
-import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Loader2, CheckCircle, Sparkles, Info, Zap, GitBranch, ArrowRight, Code, AlertCircle } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { useToast } from "@/hooks/use-toast"
+import { AlertCircle, ArrowRight, Code, GitBranch, Info, Loader2, Sparkles, Zap } from "lucide-react"
 import dynamic from 'next/dynamic'
+import { useState } from "react"
 
 const ClassDiagram = dynamic(
   () => import('@/components/ClassDiagram'),
@@ -55,7 +55,8 @@ export default function AIUMLGenerator() {
         body: new URLSearchParams({
           prompt: prompt,
           title: title
-        })
+        }),
+        credentials: "include"
       });
   
       if (!response.ok) {
