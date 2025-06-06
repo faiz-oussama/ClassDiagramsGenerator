@@ -30,6 +30,7 @@ public class ResponseProcessorService {
     }
 
 
+
     /**
      * Processes the Gemini JSON response and saves the diagram to the database.
      */
